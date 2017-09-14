@@ -13,4 +13,5 @@ for j in range(100):
     for agent in model.schedule.agents:
         all_wealth.append(agent.wealth)
 
-#plt.hist(all_wealth, bins=range(max(all_wealth)+1))
+plt.hist(all_wealth, bins=range(max(all_wealth)+1))
+plt.show()
