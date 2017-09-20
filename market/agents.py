@@ -11,7 +11,7 @@ class Trader(Agent):
         super().__init__(unique_id, model)
         self.wealth = wealth
         self.bitcoin = bitcoin
-        self.model = model
+        #self.model = model
     """
     def step(self):
         # The agent's step will go here.
@@ -27,40 +27,42 @@ class Trader(Agent):
 
 
 class RandomTrader(Trader):
-    expirationTime = 1
-
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 1
+    
+    
 
     def buy(self):
-        #buy
-        buyLimit = numpy.random.rand(1) * self.wealth
-        amountBtc = buyLimit * model.globalPrice
-        mu = 1.02
+        globalPrice = self.model.getGlobalPrice()
+        buyLimit = numpy.random.rand(1)[0] * self.wealth
+        amountBtc = buyLimit / globalPrice
+        mu = 1.50
         sigma = 0.05    #todo dependent standard deviation global price
         g = numpy.random.normal(mu, sigma)
         priceLimit = globalPrice * g
 
-        o = Order(amountBtc, priceLimit, expirationTime, self, 0)
-        model.buyOrderBook.append(o)    
+        o = Order(self, amountBtc, priceLimit, self.expirationTime, 0)
+        self.model.buyOrderBook.append(o)    
+
 
     def sell(self):
-        #sell
-        amountBtc = numpy.random.rand(1) * self.bitcoin
+        globalPrice = self.model.getGlobalPrice()
+        amountBtc = numpy.random.rand(1)[0] * self.bitcoin
         mu = 1.00
         sigma = 0.05    #todo dependent standard deviation global price
         g = numpy.random.normal(mu, sigma)
-        priceLimit = model.globalPrice * g
+        priceLimit = globalPrice * g
 
-        o = Order(amountBtc, priceLimit, expirationTime, self, 1)
-        model.sellOrderBook.append(o)
+        o = Order(self, amountBtc, priceLimit, self.expirationTime, 1)
+        self.model.sellOrderBook.append(o)
+
 
     def step(self):
         if(numpy.random.randint(2)<1):
-            buy()
+            self.buy()
         else:
-            sell()
-            
-
-
+            self.sell()
 
 
 
