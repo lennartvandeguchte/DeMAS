@@ -10,7 +10,10 @@ class Trader(Agent):
     def __init__(self, unique_id, model, wealth, bitcoin):
         super().__init__(unique_id, model)
         self.wealth = wealth
+        self.investment = 0
         self.bitcoin = bitcoin
+        self.sellContract = 0
+        self.keepTrading = True
         #self.model = model
     """
     def step(self):
@@ -24,26 +27,21 @@ class Trader(Agent):
 
         """
 		
-
-
-class RandomTrader(Trader):
-    def __init__(self, unique_id, model, wealth, bitcoin):
-        Trader.__init__(self, unique_id, model, wealth, bitcoin)
-        self.expirationTime = 1
-    
-    
-
     def buy(self):
         globalPrice = self.model.getGlobalPrice()
         buyLimit = numpy.random.rand(1)[0] * self.wealth
         amountBtc = buyLimit / globalPrice
-        mu = 1.50
+        mu = 1.02
         sigma = 0.05    #todo dependent standard deviation global price
         g = numpy.random.normal(mu, sigma)
         priceLimit = globalPrice * g
 
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 0)
-        self.model.buyOrderBook.append(o)    
+        self.model.buyOrderBook.append(o) 
+        
+
+        self.wealth - buyLimit
+        self.investment = buyLimit
 
 
     def sell(self):
@@ -57,15 +55,59 @@ class RandomTrader(Trader):
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 1)
         self.model.sellOrderBook.append(o)
 
+        self.bitcoin - amountBtc
+        self.sellContract = amountBtc
+
+
+    def stopTrading(self):
+        globalPrice = self.model.getGlobalPrice()
+
+        o = Order(self, self.bitcoin, globalPrice, 1, 1)
+        self.model.sellOrderBook.append(o)
+
+        self.sellContract = self.bitcoin
+        self.bitcoin = 0
+
+
+
+
+
+class RandomTrader(Trader):
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 3
+    
 
     def step(self):
-        if(numpy.random.randint(2)<1):
-            self.buy()
+        if(self.keepTrading):
+            if(numpy.random.rand()<=0.1):    
+                if(numpy.random.rand()<=0.5):
+                    self.buy()
+                else:
+                    self.sell()
+            else:
+                pass
         else:
-            self.sell()
+            self.stopTrading()
 
 
 
 class ChartistTrader(Trader):
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 1
+
+
     def step(self):
-        pass
+        if(self.keepTrading):
+            if(numpy.random.rand()<=0.5):
+                if(self.model.globalPriceHistory[-1] > (sum(self.model.globalPriceHistory)/len(self.model.globalPriceHistory))):
+                    self.buy()
+                    print("chartist buy")
+                else:
+                    self.sell()
+                    print("chartist sell")
+            else: 
+                pass
+        else:
+            self.stopTrading()

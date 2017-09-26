@@ -5,9 +5,13 @@ import matplotlib.pyplot as plt
 all_wealth = []
 for j in range(1):
     # Run the model
-    model = Market(10)
-    for i in range(100):
+    model = Market(100)
+    for i in range(500):
         model.step()
+
+    plt.plot(model.globalPriceHistory)
+    plt.show()
+
 
     # Store the results
         #for agent in model.schedule.agents:
