@@ -28,7 +28,6 @@ class Trader(Agent):
 
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 0)
         self.model.buyOrderBook.append(o) 
-        
 
         self.wealth - buyLimit
         self.investment = buyLimit
@@ -58,10 +57,10 @@ class Trader(Agent):
 
             self.sellContract = self.bitcoin
             self.bitcoin = 0
-            print("stopped trading")
+
         elif(self.bitcoin == 0 and self.sellContract == 0):
             self.model.schedule.agents.remove(self)
-            print("removed self")
+
         pass
 
 
@@ -99,10 +98,8 @@ class ChartistTrader(Trader):
             if(numpy.random.rand()<=0.5):
                 if(self.model.globalPriceHistory[-1] > (sum(self.model.globalPriceHistory)/len(self.model.globalPriceHistory))):
                     self.buy()
-                    print("chartist buy")
                 else:
                     self.sell()
-                    print("chartist sell")
             else: 
                 pass
         else:

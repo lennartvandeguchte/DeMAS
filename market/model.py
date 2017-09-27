@@ -54,7 +54,7 @@ class Market(Model):
                 wealth = numpy.random.pareto(0.6) * 100
                 wealth = math.floor(wealth)
                 bitcoin = 0
-                print(wealth)
+                #print(wealth)
                 if(numpy.random.rand()<0.3):
                     a = ChartistTrader(i, self, wealth, bitcoin)
                 else:
@@ -123,8 +123,7 @@ class Market(Model):
             #variables
             price = (self.sellOrderBook[0].priceLimit + self.buyOrderBook[0].priceLimit) / 2
             amount = min(self.sellOrderBook[0].amountBtc,self.buyOrderBook[0].amountBtc)
-            
-            if(self.globalPrice > price):
+
 
             #trade
             self.sellOrderBook[0].trader.wealth += amount * price
@@ -146,7 +145,9 @@ class Market(Model):
         #print(self.sellOrderBook[0])
   
                         
-    #timestep function call
+
+
+    #timestep function calls
     def step(self):
         '''Advance the model by one step.'''
         #agents perform action
