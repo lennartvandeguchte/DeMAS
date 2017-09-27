@@ -25,13 +25,14 @@ class Market(Model):
             wealth = numpy.random.pareto(0.6) * 100
             wealth = math.floor(wealth)
             bitcoin = 1
-            print(wealth)
+            #print(wealth)
             if(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
             self.schedule.add(a)
 
+    #setters and getters
     def getGlobalPrice(self):
         return self.globalPrice
 
@@ -45,14 +46,11 @@ class Market(Model):
         t = self.schedule.time
         self.num_bitcoins_historical =math.floor(((4.709*10**-5)*(t**3)-(0.08932*(t**2))+98.88*t+78880)/100)  
 
-
+    #functions
     def marketMigration(self):
         historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
-        print("historical difference")
-        print(historicalDifference)
         if(historicalDifference > 0):
             for i in range(historicalDifference):
-                print("adding agent")
                 wealth = numpy.random.pareto(0.6) * 100
                 wealth = math.floor(wealth)
                 bitcoin = 0
@@ -71,7 +69,6 @@ class Market(Model):
                 while(self.schedule.agents[randomPick].keepTrading != True):
                     randomPick = numpy.random.randint(0, size)
                 self.schedule.agents[randomPick].keepTrading = False    
-                print("agent retires")        
         else:
             pass
 
@@ -81,13 +78,10 @@ class Market(Model):
         historicalBitcoinDifference = self.num_bitcoins_historical - self.num_bitcoins
         if(historicalBitcoinDifference > 0):
             for i in range(historicalBitcoinDifference):
-                print("adding bitcoin to total")
                 size = len(self.schedule.agents) - 1
                 randomPick = numpy.random.randint(0, size)
                 while(type(self.schedule.agents[randomPick]) == RandomTrader):
                     randomPick = numpy.random.randint(0, size)
-                    print("not randomtrader")
-                print("assigned bitcoin to randomtrader")
                 self.schedule.agents[randomPick].bitcoin += 1
         else:
             pass
@@ -126,14 +120,11 @@ class Market(Model):
 
         while(self.buyOrderBook and self.sellOrderBook and self.sellOrderBook[0].priceLimit <= self.buyOrderBook[0].priceLimit):
             
-            print("trade")
-
             #variables
             price = (self.sellOrderBook[0].priceLimit + self.buyOrderBook[0].priceLimit) / 2
             amount = min(self.sellOrderBook[0].amountBtc,self.buyOrderBook[0].amountBtc)
             
             if(self.globalPrice > price):
-                print("decrease")
 
             #trade
             self.sellOrderBook[0].trader.wealth += amount * price
@@ -155,9 +146,7 @@ class Market(Model):
         #print(self.sellOrderBook[0])
   
                         
-
-
-
+    #timestep function call
     def step(self):
         '''Advance the model by one step.'''
         #agents perform action

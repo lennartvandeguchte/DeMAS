@@ -4,7 +4,7 @@ from order import Order
 import random
 
 
-
+#agents parent class
 class Trader(Agent):
     """ An agent with fixed initial wealth."""
     def __init__(self, unique_id, model, wealth, bitcoin):
@@ -14,19 +14,9 @@ class Trader(Agent):
         self.bitcoin = bitcoin
         self.sellContract = 0
         self.keepTrading = True
-        #self.model = model
-    """
-    def step(self):
-        # The agent's step will go here.
-        if self.wealth <= 10:
-            return
-        other_agent = random.choice(self.model.schedule.agents)
-        other_agent.wealth += 1
-        self.wealth -= 1
-        pass
 
-        """
-		
+    #behaviours of the agents
+    #wants to buy
     def buy(self):
         globalPrice = self.model.getGlobalPrice()
         buyLimit = numpy.random.rand(1)[0] * self.wealth
@@ -43,7 +33,7 @@ class Trader(Agent):
         self.wealth - buyLimit
         self.investment = buyLimit
 
-
+    #wants to sell
     def sell(self):
         globalPrice = self.model.getGlobalPrice()
         amountBtc = numpy.random.rand(1)[0] * self.bitcoin
@@ -58,7 +48,7 @@ class Trader(Agent):
         self.bitcoin - amountBtc
         self.sellContract = amountBtc
 
-
+    #wants to retire
     def stopTrading(self):
         globalPrice = self.model.getGlobalPrice()
 
@@ -77,13 +67,13 @@ class Trader(Agent):
 
 
 
-
+#trader that makes random trades
 class RandomTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 3
     
-
+    #do behaviour for step at time t
     def step(self):
         if(self.keepTrading):
             if(numpy.random.rand()<=0.1):    
@@ -97,13 +87,13 @@ class RandomTrader(Trader):
             self.stopTrading()
 
 
-
+#trader that buys when globalprice is increasing and sells if globalprice is decreasing
 class ChartistTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 1
 
-
+    #do behaviour for step at time t
     def step(self):
         if(self.keepTrading):
             if(numpy.random.rand()<=0.5):

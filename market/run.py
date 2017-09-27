@@ -2,14 +2,18 @@ from model import *
 import matplotlib.pyplot as plt
 
 # run.py
-all_wealth = []
+#all_wealth = []
+
+#amount of simulations
 for j in range(1):
-    # Run the model
+    # create new model for a simulation
     model = Market()
-    #max range equals 415
+
+    #max range (timesteps) equals 415 (830 days)
     for i in range(415):
         model.step()
 
+    #show results for simulation j after 415 timesteps
     plt.plot(model.globalPriceHistory)
     plt.show()
 
