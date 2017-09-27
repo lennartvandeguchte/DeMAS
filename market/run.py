@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 all_wealth = []
 for j in range(1):
     # Run the model
-    model = Market(100)
-    for i in range(500):
+    model = Market()
+    #max range equals 415
+    for i in range(415):
         model.step()
 
     plt.plot(model.globalPriceHistory)

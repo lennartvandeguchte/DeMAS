@@ -3,15 +3,22 @@ from mesa.time import RandomActivation
 from agents import Trader, RandomTrader, ChartistTrader
 import numpy
 import math
+import random
 
 class Market(Model):
-    def __init__(self, N):
-        self.globalPrice = 2
+    def __init__(self):
+        self.globalPrice = 5.5
         self.globalPriceHistory = [self.globalPrice]
-        self.num_agents = N
+        self.num_agents = 0
+        self.num_agents_historical = numpy.genfromtxt('./inputs/n-unique-addresses.csv', delimiter=',')
+        self.num_bitcoins = 789
+        self.num_bitcoins_historical = 789
         self.schedule = RandomActivation(self)
         self.sellOrderBook = []
         self.buyOrderBook = []
+
+
+        self.num_agents = math.floor(self.num_agents_historical[0]/100)
 
         # Create agents
         for i in range(self.num_agents):
@@ -31,9 +38,60 @@ class Market(Model):
     def setGlobalPrice(self, price):
         self.globalPrice = price
 
+    def getHistoricalBitcoins(self):
+        return self.num_bitcoins_historical
+
+    def setHistoricalBitcoins(self):
+        t = self.schedule.time
+        self.num_bitcoins_historical =math.floor(((4.709*10**-5)*(t**3)-(0.08932*(t**2))+98.88*t+78880)/100)  
+
 
     def marketMigration(self):
-        pass
+        historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
+        print("historical difference")
+        print(historicalDifference)
+        if(historicalDifference > 0):
+            for i in range(historicalDifference):
+                print("adding agent")
+                wealth = numpy.random.pareto(0.6) * 100
+                wealth = math.floor(wealth)
+                bitcoin = 0
+                print(wealth)
+                if(numpy.random.rand()<0.3):
+                    a = ChartistTrader(i, self, wealth, bitcoin)
+                else:
+                    a = RandomTrader(i, self, wealth, bitcoin)
+                self.num_agents += 1
+                self.schedule.add(a)
+        elif(historicalDifference < 0):
+            for i in range(historicalDifference*-1):
+                self.num_agents -= 1
+                size = len(self.schedule.agents) - 1
+                randomPick = numpy.random.randint(0, size)
+                while(self.schedule.agents[randomPick].keepTrading != True):
+                    randomPick = numpy.random.randint(0, size)
+                self.schedule.agents[randomPick].keepTrading = False    
+                print("agent retires")        
+        else:
+            pass
+
+    
+    def mining(self):
+        self.setHistoricalBitcoins()
+        historicalBitcoinDifference = self.num_bitcoins_historical - self.num_bitcoins
+        if(historicalBitcoinDifference > 0):
+            for i in range(historicalBitcoinDifference):
+                print("adding bitcoin to total")
+                size = len(self.schedule.agents) - 1
+                randomPick = numpy.random.randint(0, size)
+                while(type(self.schedule.agents[randomPick]) == RandomTrader):
+                    randomPick = numpy.random.randint(0, size)
+                    print("not randomtrader")
+                print("assigned bitcoin to randomtrader")
+                self.schedule.agents[randomPick].bitcoin += 1
+        else:
+            pass
+
 
 
     def checkExpiration(self):
@@ -107,6 +165,9 @@ class Market(Model):
 
         #new traders entering market and traders leaving market
         self.marketMigration()
+
+        #mining new bitcoins
+        self.mining()
 
         #check if there are orders that expired
         self.checkExpiration()

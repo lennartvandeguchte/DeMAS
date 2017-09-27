@@ -62,11 +62,17 @@ class Trader(Agent):
     def stopTrading(self):
         globalPrice = self.model.getGlobalPrice()
 
-        o = Order(self, self.bitcoin, globalPrice, 1, 1)
-        self.model.sellOrderBook.append(o)
+        if(self.bitcoin > 0):
+            o = Order(self, self.bitcoin, globalPrice, 1, 1)
+            self.model.sellOrderBook.append(o)
 
-        self.sellContract = self.bitcoin
-        self.bitcoin = 0
+            self.sellContract = self.bitcoin
+            self.bitcoin = 0
+            print("stopped trading")
+        elif(self.bitcoin == 0 and self.sellContract == 0):
+            self.model.schedule.agents.remove(self)
+            print("removed self")
+        pass
 
 
 
