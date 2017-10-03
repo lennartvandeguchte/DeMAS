@@ -17,10 +17,10 @@ class Market(Model):
         self.sellOrderBook = []
         self.buyOrderBook = []
 
-
+        # Set number of agents to historical amount at t=0
         self.num_agents = math.floor(self.num_agents_historical[0]/100)
 
-        # Create agents
+        # Create initial agents
         for i in range(self.num_agents):
             wealth = numpy.random.pareto(0.6) * 100
             wealth = math.floor(wealth)
@@ -44,11 +44,13 @@ class Market(Model):
 
     def setHistoricalBitcoins(self):
         t = self.schedule.time
-        self.num_bitcoins_historical =math.floor(((4.709*10**-5)*(t**3)-(0.08932*(t**2))+98.88*t+78880)/100)  
+        self.num_bitcoins_historical = math.floor(((4.709*10**-5)*(t**3)-(0.08932*(t**2))+98.88*t+78880)/100)  
 
     #functions
     def marketMigration(self):
+        # checking for difference between data and model
         historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
+        # there are not enough traders in the model
         if(historicalDifference > 0):
             for i in range(historicalDifference):
                 wealth = numpy.random.pareto(0.6) * 100
@@ -61,6 +63,7 @@ class Market(Model):
                     a = RandomTrader(i, self, wealth, bitcoin)
                 self.num_agents += 1
                 self.schedule.add(a)
+        # there are too many traders in the model
         elif(historicalDifference < 0):
             for i in range(historicalDifference*-1):
                 self.num_agents -= 1
@@ -85,7 +88,6 @@ class Market(Model):
                 self.schedule.agents[randomPick].bitcoin += 1
         else:
             pass
-
 
 
     def checkExpiration(self):
@@ -149,7 +151,6 @@ class Market(Model):
 
     #timestep function calls
     def step(self):
-        '''Advance the model by one step.'''
         #agents perform action
         self.schedule.step()
 

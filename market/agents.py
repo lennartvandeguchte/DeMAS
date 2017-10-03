@@ -64,8 +64,6 @@ class Trader(Agent):
         pass
 
 
-
-
 #trader that makes random trades
 class RandomTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
