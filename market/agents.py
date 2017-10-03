@@ -89,12 +89,14 @@ class ChartistTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 1
+        self.lookBackTime = numpy.random.randint(30)+1
+
 
     #do behaviour for step at time t
     def step(self):
         if(self.keepTrading):
-            if(numpy.random.rand()<=0.5):
-                if(self.model.globalPriceHistory[-1] > (sum(self.model.globalPriceHistory)/len(self.model.globalPriceHistory))):
+            if(numpy.random.rand()<=0.5 and len(self.model.globalPriceHistory) > self.lookBackTime):
+                if(self.model.globalPriceHistory[-1] > (sum(self.model.globalPriceHistory[-self.lookBackTime:])/self.lookBackTime)):
                     self.buy()
                 else:
                     self.sell()
