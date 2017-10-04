@@ -1,6 +1,6 @@
 from mesa.model import Model
 from mesa.time import RandomActivation
-from agents import Trader, RandomTrader, ChartistTrader
+from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader
 import numpy
 import math
 import random
@@ -19,7 +19,7 @@ class Market(Model):
 
 
         self.num_agents = math.floor(self.num_agents_historical[0]/100)
-
+        print(self.num_agents)
         # Create agents
         for i in range(self.num_agents):
             wealth = numpy.random.pareto(0.6) * 100
@@ -28,6 +28,8 @@ class Market(Model):
             #print(wealth)
             if(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
+            elif(numpy.random.rand()<0.3): ### Amount of self learning agents
+                a = SelfLearningTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
             self.schedule.add(a)

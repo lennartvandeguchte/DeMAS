@@ -2,6 +2,8 @@ from mesa import Agent
 import numpy 
 from order import Order
 import random
+from keras.models import model_from_json
+#from learningAgent import *
 
 
 #agents parent class
@@ -97,6 +99,36 @@ class ChartistTrader(Trader):
         if(self.keepTrading):
             if(numpy.random.rand()<=0.5):
                 if(self.model.globalPriceHistory[-1] > (sum(self.model.globalPriceHistory)/len(self.model.globalPriceHistory))):
+                    self.buy()
+                else:
+                    self.sell()
+            else: 
+                pass
+        else:
+            self.stopTrading()
+
+
+
+#trader that buys when globalprice is increasing and sells if globalprice is decreasing
+class SelfLearningTrader(Trader):
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 1
+        # load json and create model
+        json_file = open('inputs\learningModel.json', 'r')
+        loadedModel = json_file.read()
+        json_file.close()
+        learningModel = model_from_json(loadedModel)
+        # load weights into new model
+        learningModel.load_weights("inputs\model.h5")
+        print("Loaded model from disk")
+
+    #do behaviour for step at time t
+    def step(self):
+        if(self.keepTrading):
+            if(numpy.random.rand()<=0.5):
+                print(self.model.globalPriceHistory)
+                if(True):
                     self.buy()
                 else:
                     self.sell()
