@@ -18,8 +18,8 @@ for j in range(100):
         all_history[i] += model.globalPriceHistory[i]
     #show results for simulation j after 415 timesteps
 
-for h in range(100):
-    all_history[i] = all_history[i]/100
+for h in range(415):
+    all_history[h] = all_history[h]/100
 plt.plot(all_history)
 plt.show()
 
