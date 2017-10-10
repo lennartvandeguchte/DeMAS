@@ -69,7 +69,13 @@ class Market(Model):
 
     #functions
     def marketMigration(self):
-        historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
+        # checking for difference between data and model
+        if(self.schedule.time < 415):
+            historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
+        else:
+            historicalDifference = 0
+
+        # there are not enough traders in the model   
         if(historicalDifference > 0):
             for i in range(historicalDifference):
                 wealth = numpy.random.pareto(0.6) * 100
