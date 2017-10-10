@@ -1,6 +1,7 @@
 from __future__ import print_function
 import sys
 import numpy as np
+from numpy import newaxis
 np.random.seed(1335)  # for reproducibility
 np.set_printoptions(precision=5, suppress=True, linewidth=150)
 
@@ -16,7 +17,7 @@ import quandl
 
 
 #Initialize first state, all items are placed deterministically
-def init_state(bitcoinData, test=False):
+def init_state(bitcoinData, test=True):
 
     bitcoinData = np.array(bitcoinData)
     diff = np.diff(bitcoinData) #compute differences bitcoinprices between days
@@ -39,10 +40,10 @@ def init_state(bitcoinData, test=False):
     elif test == True:
         scaler = joblib.load('data/scaler.pkl')
         xdata = np.expand_dims(scaler.fit_transform(xdata), axis=1)
-    print('xdata', xdata)
-    state = xdata[0:1, 0:1, :]
+
+    state = xdata[-1:, -1:, :]
     print('state', state)
-    sys.exit()
+
     return state, xdata, bitcoinData
 
 #Take Action
@@ -54,7 +55,7 @@ def take_action(state, xdata, action, signal, time_step):
     time_step += 1
     
     #if the current iteration is the last state ("terminal state") then set terminal_state to 1
-    if time_step + 1 == xdata.shape[0]:
+    if time_step + 1 == len(signal):
         state = xdata[time_step-1:time_step, 0:1, :]
         terminal_state = 1
         signal.loc[time_step] = 0
@@ -73,6 +74,8 @@ def take_action(state, xdata, action, signal, time_step):
     #print(state)
     terminal_state = 0
     #print('signal', signal)
+
+
 
     return state, time_step, signal, terminal_state
 
@@ -103,27 +106,60 @@ def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval
 
 
 
-def buyBitcoin(eval_model, globalPriceHistory, epoch=0):
-    #This function is used to evaluate the performance of the system each epoch, without the influence of epsilon and random actions
-    eval_data = globalPriceHistory
-    signal = pd.Series(index=np.arange(len(eval_data)))
-    state, xdata, price_data = init_state(eval_data)
+def buyBitcoin(eval_model, globalPriceHistory, time):
+    signal = pd.Series(index=np.arange(415))
+    state, xdata, price_data = init_state(globalPriceHistory)
   
     status = 1
     terminal_state = 0
-    time_step = 1
+    time_step = time
+
     while(status == 1):
         #We start in state S
         #Run the Q function on S to get predicted reward values on all the possible actions
         qval = eval_model.predict(state, batch_size=1)
+        print('qval', qval)
         action = (np.argmax(qval))
+        print('action', action)
         #Take action, observe new state S'
         new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
         #Observe reward
-        eval_reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state, eval=True, epoch=epoch)
+        print('time_step', time_step)
+        eval_reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state, eval=True, epoch=time)
+        print('eval_reward', eval_reward)
         state = new_state
         if terminal_state == 1: #terminal state
             status = 0
 
-    return eval_reward
+    return action
 
+    
+
+
+# def evaluate(eval_model, globalPriceHistory, time):
+#     # #This function is used to evaluate the performance of the system each epoch, without the influence of epsilon and random actions
+#     signal = pd.Series(index=np.arange(415))
+#     state, xdata, price_data = init_state(globalPriceHistory)
+  
+#     status = 1
+#     terminal_state = 0
+#     time_step = time
+
+#     while(status == 1):
+#         #We start in state S
+#         #Run the Q function on S to get predicted reward values on all the possible actions
+#         qval = eval_model.predict(state, batch_size=1)
+#         print('qval', qval)
+#         action = (np.argmax(qval))
+#         print('action', action)
+#         #Take action, observe new state S'
+#         new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
+#         #Observe reward
+#         print('time_step', time_step)
+#         eval_reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state, eval=True, epoch=time)
+#         print('eval_reward', eval_reward)
+#         state = new_state
+#         if terminal_state == 1: #terminal state
+#             status = 0
+
+#     return action

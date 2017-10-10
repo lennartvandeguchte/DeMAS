@@ -42,7 +42,7 @@ class Market(Model):
             if(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
             elif(numpy.random.rand()<0.1): ### Amount of self learning agents
-                a = SelfLearningTrader(i, self, wealth, bitcoin)
+                a = SelfLearningTrader(i, self, wealth, bitcoin, self.schedule.time)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
             self.schedule.add(a)
