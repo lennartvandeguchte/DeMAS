@@ -2,7 +2,8 @@ from mesa import Agent
 import numpy 
 from order import Order
 import random
-from keras.models import model_from_json
+from learningAgent import buyBitcoin
+
 #from learningAgent import *
 
 
@@ -114,20 +115,12 @@ class SelfLearningTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 1
-        # load json and create model
-        json_file = open('inputs\learningModel.json', 'r')
-        loadedModel = json_file.read()
-        json_file.close()
-        learningModel = model_from_json(loadedModel)
-        # load weights into new model
-        learningModel.load_weights("inputs\model.h5")
-        print("Loaded model from disk")
 
     #do behaviour for step at time t
     def step(self):
         if(self.keepTrading):
             if(numpy.random.rand()<=0.5):
-                print(self.model.globalPriceHistory)
+                print(buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, 0))
                 if(True):
                     self.buy()
                 else:

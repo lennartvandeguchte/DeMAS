@@ -1,14 +1,18 @@
 from mesa.model import Model
 from mesa.time import RandomActivation
 from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader
+from keras.models import model_from_json
+import pandas as pd
 import numpy
 import math
 import random
+import sys
 
 class Market(Model):
     def __init__(self):
         self.globalPrice = 5.5
-        self.globalPriceHistory = [self.globalPrice]
+        self.globalPriceHistory = self.loadBitcoinData(200)
+        print(self.globalPriceHistory)
         self.num_agents = 0
         self.num_agents_historical = numpy.genfromtxt('./inputs/n-unique-addresses.csv', delimiter=',')
         self.num_bitcoins = 789
@@ -17,9 +21,18 @@ class Market(Model):
         self.sellOrderBook = []
         self.buyOrderBook = []
 
-
         self.num_agents = math.floor(self.num_agents_historical[0]/100)
         print(self.num_agents)
+
+        # load and create learning model
+        json_file = open('inputs\learningModel.json', 'r')
+        loadedModel = json_file.read()
+        json_file.close()
+        self.learningModel = model_from_json(loadedModel)
+        # load weights into new model
+        self.learningModel.load_weights("inputs\model.h5")
+        print("Loaded model from disk")
+
         # Create agents
         for i in range(self.num_agents):
             wealth = numpy.random.pareto(0.6) * 100
@@ -28,11 +41,17 @@ class Market(Model):
             #print(wealth)
             if(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
-            elif(numpy.random.rand()<0.3): ### Amount of self learning agents
+            elif(numpy.random.rand()<0.1): ### Amount of self learning agents
                 a = SelfLearningTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
             self.schedule.add(a)
+
+    def loadBitcoinData(self, numberOfDays):
+        prices = pd.read_pickle('data/BITSTAMP_1day.pkl')
+        prices = prices.iloc[(-2102-numberOfDays):-2102,]
+        return prices['Close'].values
+
 
     #setters and getters
     def getGlobalPrice(self):
@@ -142,7 +161,7 @@ class Market(Model):
                 self.buyOrderBook.remove(self.buyOrderBook[0])
 
         self.setGlobalPrice(price)
-        self.globalPriceHistory.append(price)
+        numpy.append(self.globalPriceHistory, price)
         print(self.globalPrice)
         #print(self.sellOrderBook[0])
   
