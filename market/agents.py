@@ -111,23 +111,23 @@ class ChartistTrader(Trader):
 
 
 #trader that buys when globalprice is increasing and sells if globalprice is decreasing
-class SelfLearningTrader(Trader):
-    def __init__(self, unique_id, model, wealth, bitcoin, time):
-        Trader.__init__(self, unique_id, model, wealth, bitcoin)
-        self.expirationTime = 1
-        self.time = time
+# class SelfLearningTrader(Trader):
+#     def __init__(self, unique_id, model, wealth, bitcoin, time):
+#         Trader.__init__(self, unique_id, model, wealth, bitcoin)
+#         self.expirationTime = 1
+#         self.time = time
 
-    #do behaviour for step at time t
-    def step(self):
-        #f(self.keepTrading):
-        action = buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, self.time)
-        print('action', action)
+#     #do behaviour for step at time t
+#     def step(self):
+#         #f(self.keepTrading):
+#         action = buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, self.time)
+#         print('action', action)
 
-        if(action == 0):
-            self.buy()
-        elif(action==1):
-            self.sell()
-        else:
-            pass
-        #else:
-         #   self.stopTrading()
+#         if(action == 0):
+#             self.buy()
+#         elif(action==1):
+#             self.sell()
+#         else:
+#             pass
+#         #else:
+#          #   self.stopTrading()
