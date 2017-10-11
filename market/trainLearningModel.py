@@ -3,15 +3,12 @@ from __future__ import print_function
 import numpy as np
 np.random.seed(1335)  # for reproducibility
 np.set_printoptions(precision=5, suppress=True, linewidth=150)
-
 import pandas as pd
 import backtest as twp
 from matplotlib import pyplot as plt
 from sklearn import metrics, preprocessing
-from talib.abstract import *
-import talib as tl
 from sklearn.externals import joblib
-
+import sys
 import quandl
 
 
@@ -20,10 +17,6 @@ def read_convert_data(symbol='BITSTAMP'):
     if symbol == 'BITSTAMP':
         prices = quandl.get("BCHARTS/BITSTAMPUSD")
         prices.to_pickle('data/BITSTAMP_1day.pkl') # a /data folder must exist
-    if symbol == 'EURUSD_1day':
-        #prices = quandl.get("ECB/EURUSD")
-        prices = pd.read_csv('data/EURUSD_1day.csv',sep=",", skiprows=0, header=0, index_col=0, parse_dates=True, names=['ticker', 'date', 'time', 'open', 'low', 'high', 'close'])
-        prices.to_pickle('data/EURUSD_1day.pkl')
     #print(prices)
 
 def load_data(test=False):
@@ -34,7 +27,7 @@ def load_data(test=False):
     prices.rename(columns={'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close', 'Volume (BTC)': 'volume'}, inplace=True)
     #print(prices)
     x_train = prices.iloc[-2102:-1271,]
-    x_test= prices.iloc[-1271:-1221,]
+    x_test= prices.iloc[-1321:-1221,]
     print(x_train)
     if test:
         return x_test
@@ -42,24 +35,29 @@ def load_data(test=False):
         return x_train
 
 def load_simulated_data():
-
-    return simulatedData
+    return pd.read_pickle('data/simulationPrices.pkl')
+   
 
 #Initialize first state, all items are placed deterministically
 def init_state(bitcoinData, test=False):
-    close = bitcoinData['close'].values
-
-    diff = np.diff(close) #compute differences bitcoinprices between days
+    
+    # Compute features of bitcoin price to feed the network
+    diff = np.diff(bitcoinData) #Difference of bitcoinprices between days
     diff = np.insert(diff, 0, 0)
+    cumsum_vec = np.cumsum(np.insert(bitcoinData, 0, 0)) 
+    sma15 = (cumsum_vec[15:] - cumsum_vec[:-15]) / 15 #computes simple moving average over timeperiods of 15/60 days  
+    for i in range(14):
+        sma15 = np.insert(sma15, 0, np.nan)
 
-    sma15 = tl.SMA(close, timeperiod=15)   #computes simple moving average over timeperiods of 15/60 days  
-    sma60 = tl.SMA(close, timeperiod=60)
-    rsi = tl.RSI(close, timeperiod=14)   #Computes the relative strength index (rsi)
-    #atr = tl.ATR(close, timeperiod=14)   #Computes the average true rate (atr)
+    sma60 = (cumsum_vec[60:] - cumsum_vec[:-60]) / 60
+    for i in range(59):
+        sma60 = np.insert(sma60, 0, np.nan)
+    
+    rsi = rsiFunc(bitcoinData, diff)   #Computes the relative strength index (rsi)
 
     #--- Preprocess data
-    xdata = np.column_stack((close, diff, sma15, close-sma15, sma15-sma60, rsi))
-
+    print(bitcoinData.shape, sma15.shape, sma60.shape)
+    xdata = np.column_stack((bitcoinData, diff, sma15, bitcoinData-sma15, sma15-sma60, rsi))
     xdata = np.nan_to_num(xdata)
 
     if test == False:
@@ -71,7 +69,34 @@ def init_state(bitcoinData, test=False):
         xdata = np.expand_dims(scaler.fit_transform(xdata), axis=1)
     
     state = xdata[0:1, 0:1, :]
-    return state, xdata, close
+    return state, xdata, bitcoinData
+
+# Function to compute the relative strength index
+def rsiFunc(prices, diff, n=14):
+    seed = diff[:n+1]
+    up = seed[seed>=0].sum()/n
+    down = -seed[seed<0].sum()/n
+    rs = up/down
+    rsi = np.zeros_like(prices)
+    rsi[:n] = 100. - 100./(1.+rs)
+
+    for i in range(n, len(prices)):
+        delta = diff[i-1] # cause the diff is 1 shorter
+
+        if delta>0:
+            upval = delta
+            downval = 0.
+        else:
+            upval = 0.
+            downval = -delta
+
+        up = (up*(n-1) + upval)/n
+        down = (down*(n-1) + downval)/n
+
+        rs = up/down
+        rsi[i] = 100. - 100./(1.+rs)
+
+    return rsi
 
 #Take Action
 def take_action(state, xdata, action, signal, time_step):
@@ -187,102 +212,109 @@ model.compile(loss='mse', optimizer=adam)
 
 
 
-##### Script to run ##########
+##### Script to run ########################################################################
 import random, timeit
 start_time = timeit.default_timer()
 
 #read_convert_data(symbol='BITSTAMP') # Has to runned only once
-bitcoinData = load_data()
-test_data = load_data(test=True)
+#bitcoinData = load_data()
+#test_data = load_data(test=True)
 
-# Settings
-epochs = 2
-gamma = 0.95 #since the reward can be several time steps away, make gamma high
-epsilon = 1
-batchSize = 100
-buffer = 200
-replay = []
-learning_progress = [] #stores tuples of (S, A, R, S')
-h = 0
-#signal = pd.Series(index=market_data.index)
-signal = pd.Series(index=np.arange(len(bitcoinData)))
+simulated_data = load_simulated_data()
+test_data = simulated_data['results%s' %(len(simulated_data)-1)]
 
-for i in range(epochs):
-    if i == epochs-1: #the last epoch, use test data set
-        bitcoinData = load_data(test=True)
-        state, xdata, price_data = init_state(bitcoinData, test=True)
-    else:
-        state, xdata, price_data = init_state(bitcoinData)
+for index in range(len(simulated_data)-1):
+    #Load simulated data
+    bitcoinData = simulated_data['results%s' %index]
 
-    status = 1
-    terminal_state = 0
-    time_step = 1
+    # Settings
+    epochs = 5
+    gamma = 0.95 #since the reward can be several time steps away, make gamma high
+    epsilon = 1
+    batchSize = 100
+    buffer = 200
+    replay = []
+    learning_progress = [] #stores tuples of (S, A, R, S')
+    h = 0
+    #signal = pd.Series(index=market_data.index)
+    signal = pd.Series(index=np.arange(len(bitcoinData)))
 
-    #while game still in progress
-    while(status == 1):
-        #We are in state S
-        #Let's run our Q function on S to get Q values for all possible actions
-        qval = model.predict(state, batch_size=1)
-        #print('qval', qval) 
- 
-        if (random.random() < epsilon): #choose random action
-            action = np.random.randint(0,4) #assumes 4 different actions
-        else: #choose best action from Q(s,a) values
-            action = (np.argmax(qval))
-        #Take action, observe new state S'
-        new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
-        #Observe reward
-        reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state)
+    for i in range(epochs):
+        if i == epochs-1: #the last epoch, use test data set
+            bitcoinData = test_data
+            state, xdata, price_data = init_state(bitcoinData, test=True)
+        else:
+            state, xdata, price_data = init_state(bitcoinData)
 
-        #Experience replay storage
-        if (len(replay) < buffer): #if buffer not filled, add to it
-            replay.append((state, action, reward, new_state))
-            #print(time_step, reward, terminal_state)
-        else: #if buffer full, overwrite old values
-            if (h < (buffer-1)):
-                h += 1
-            else:
-                h = 0
-            replay[h] = (state, action, reward, new_state)
-            #randomly sample our experience replay memory
-            minibatch = random.sample(replay, batchSize)
-            X_train = []
-            y_train = []
-            for memory in minibatch:
-                #Get max_Q(S',a)
-                old_state, action, reward, new_state = memory
-                old_qval = model.predict(old_state, batch_size=1)
-                newQ = model.predict(new_state, batch_size=1)
-                maxQ = np.max(newQ)
-                y = np.zeros((1,4))
-                y[:] = old_qval[:]
-                if terminal_state == 0: #non-terminal state
-                    update = (reward + (gamma * maxQ))
-                else: #terminal state
-                    update = reward
-                y[0][action] = update
+        status = 1
+        terminal_state = 0
+        time_step = 1
+
+        #while game still in progress
+        while(status == 1):
+            #We are in state S
+            #Let's run our Q function on S to get Q values for all possible actions
+            qval = model.predict(state, batch_size=1)
+            #print('qval', qval) 
+    
+            if (random.random() < epsilon): #choose random action
+                action = np.random.randint(0,4) #assumes 4 different actions
+            else: #choose best action from Q(s,a) values
+                action = (np.argmax(qval))
+            #Take action, observe new state S'
+            new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
+            #Observe reward
+            reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state)
+
+            #Experience replay storage
+            if (len(replay) < buffer): #if buffer not filled, add to it
+                replay.append((state, action, reward, new_state))
                 #print(time_step, reward, terminal_state)
-                X_train.append(old_state)
-                y_train.append(y.reshape(4,))
+            else: #if buffer full, overwrite old values
+                if (h < (buffer-1)):
+                    h += 1
+                else:
+                    h = 0
+                replay[h] = (state, action, reward, new_state)
+                #randomly sample our experience replay memory
+                minibatch = random.sample(replay, batchSize)
+                X_train = []
+                y_train = []
+                for memory in minibatch:
+                    #Get max_Q(S',a)
+                    old_state, action, reward, new_state = memory
+                    old_qval = model.predict(old_state, batch_size=1)
+                    newQ = model.predict(new_state, batch_size=1)
+                    maxQ = np.max(newQ)
+                    y = np.zeros((1,4))
+                    y[:] = old_qval[:]
+                    if terminal_state == 0: #non-terminal state
+                        update = (reward + (gamma * maxQ))
+                    else: #terminal state
+                        update = reward
+                    y[0][action] = update
+                    #print(time_step, reward, terminal_state)
+                    X_train.append(old_state)
+                    y_train.append(y.reshape(4,))
 
-            X_train = np.squeeze(np.array(X_train), axis=(1))
-            y_train = np.array(y_train)
-            model.fit(X_train, y_train, batch_size=batchSize, epochs=1, verbose=0)
-            
-            state = new_state
-        if terminal_state == 1: #if reached terminal state, update epoch status
-            status = 0
+                X_train = np.squeeze(np.array(X_train), axis=(1))
+                y_train = np.array(y_train)
+                model.fit(X_train, y_train, batch_size=batchSize, epochs=1, verbose=0)
+                
+                state = new_state
+            if terminal_state == 1: #if reached terminal state, update epoch status
+                status = 0
 
-    print('###############################   EVALUATE  #######################################')
+        print('###############################   EVALUATE  #######################################')
 
 
 
-    eval_reward = evaluate_Q(test_data, model, price_data, i)
-    learning_progress.append((eval_reward))
-    print("Epoch #: %s Reward: %f Epsilon: %f" % (i,eval_reward, epsilon))
-    #learning_progress.append((reward))
-    if epsilon > 0.1: #decrement epsilon over time
-        epsilon -= (1.0/epochs)
+        eval_reward = evaluate_Q(test_data, model, price_data, i)
+        learning_progress.append((eval_reward))
+        print("Epoch #: %s Reward: %f Epsilon: %f" % (i,eval_reward, epsilon))
+        #learning_progress.append((reward))
+        if epsilon > 0.1: #decrement epsilon over time
+            epsilon -= (1.0/epochs)
 
 
 
