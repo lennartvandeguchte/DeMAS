@@ -1,6 +1,6 @@
 from mesa.model import Model
 from mesa.time import RandomActivation
-from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader
+from agents import Trader, RandomTrader, ChartistTrader#, SelfLearningTrader
 from keras.models import model_from_json
 import pandas as pd
 import numpy
@@ -11,7 +11,7 @@ import sys
 class Market(Model):
     def __init__(self):
         self.globalPrice = 5.5
-        self.globalPriceHistory = self.loadBitcoinData(200)
+        self.globalPriceHistory = [self.globalPrice] #self.loadBitcoinData(200)
         print(self.globalPriceHistory)
         self.num_agents = 0
         self.num_agents_historical = numpy.genfromtxt('./inputs/n-unique-addresses.csv', delimiter=',')
@@ -39,9 +39,9 @@ class Market(Model):
             wealth = math.floor(wealth)
             bitcoin = 1
             #print(wealth)
-            if(i==1): ### One self learning agent
-                a = SelfLearningTrader(i, self, wealth, bitcoin, self.schedule.time)
-            elif(numpy.random.rand()<0.3):
+            #if(i==1 and ): ### One self learning agent
+            #    a = SelfLearningTrader(i, self, wealth, bitcoin, self.schedule.time)
+            if(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
