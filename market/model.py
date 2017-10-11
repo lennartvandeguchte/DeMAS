@@ -39,10 +39,10 @@ class Market(Model):
             wealth = math.floor(wealth)
             bitcoin = 1
             #print(wealth)
-            if(numpy.random.rand()<0.3):
-                a = ChartistTrader(i, self, wealth, bitcoin)
-            elif(numpy.random.rand()<0.1): ### Amount of self learning agents
+            if(i==1): ### One self learning agent
                 a = SelfLearningTrader(i, self, wealth, bitcoin, self.schedule.time)
+            elif(numpy.random.rand()<0.3):
+                a = ChartistTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
             self.schedule.add(a)
@@ -167,7 +167,7 @@ class Market(Model):
                 self.buyOrderBook.remove(self.buyOrderBook[0])
 
         self.setGlobalPrice(price)
-        numpy.append(self.globalPriceHistory, price)
+        self.globalPriceHistory = numpy.append(self.globalPriceHistory, price)
         print(self.globalPrice)
         #print(self.sellOrderBook[0])
   

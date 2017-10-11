@@ -41,6 +41,10 @@ def load_data(test=False):
     else:
         return x_train
 
+def load_simulated_data():
+
+    return simulatedData
+
 #Initialize first state, all items are placed deterministically
 def init_state(bitcoinData, test=False):
     close = bitcoinData['close'].values
@@ -65,9 +69,8 @@ def init_state(bitcoinData, test=False):
     elif test == True:
         scaler = joblib.load('data/scaler.pkl')
         xdata = np.expand_dims(scaler.fit_transform(xdata), axis=1)
-    print('xdata', xdata)
+    
     state = xdata[0:1, 0:1, :]
-    print('state', state)
     return state, xdata, close
 
 #Take Action
@@ -101,6 +104,7 @@ def take_action(state, xdata, action, signal, time_step):
 
     return state, time_step, signal, terminal_state
 
+
 #Get Reward, the reward is returned at the end of an episode
 def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval=False, epoch=0):
     reward = 0
@@ -128,8 +132,7 @@ def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval
 
 def evaluate_Q(eval_data, eval_model, price_data, epoch=0):
     #This function is used to evaluate the performance of the system each epoch, without the influence of epsilon and random actions
-    print('eval_data', eval_data)
-    print('price_data', price_data)
+  
     signal = pd.Series(index=np.arange(len(eval_data)))
     state, xdata, price_data = init_state(eval_data)
     status = 1
@@ -139,7 +142,7 @@ def evaluate_Q(eval_data, eval_model, price_data, epoch=0):
         #We start in state S
         #Run the Q function on S to get predicted reward values on all the possible actions
         qval = eval_model.predict(state, batch_size=1)
-        print('qval', qval)
+        #print('qval', qval)
         action = (np.argmax(qval))
         #Take action, observe new state S'
         new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
@@ -194,7 +197,7 @@ test_data = load_data(test=True)
 
 # Settings
 epochs = 2
-gamma = 0.25 #since the reward can be several time steps away, make gamma high
+gamma = 0.95 #since the reward can be several time steps away, make gamma high
 epsilon = 1
 batchSize = 100
 buffer = 200

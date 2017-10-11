@@ -8,7 +8,7 @@ import numpy
 all_history = numpy.zeros(415)
 
 #amount of simulations
-for j in range(100):
+for j in range(1):
     # create new model for a simulation
     model = Market()
 

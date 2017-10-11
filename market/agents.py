@@ -68,7 +68,6 @@ class Trader(Agent):
 
 
 
-
 #trader that makes random trades
 class RandomTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
@@ -120,16 +119,15 @@ class SelfLearningTrader(Trader):
 
     #do behaviour for step at time t
     def step(self):
-        if(self.keepTrading):
-            if(numpy.random.rand()<=0.5):
-                action = buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, self.time)
-                if(action == 0):
-                    self.buy()
-                elif(action==1):
-                    self.sell()
-                else:
-                    pass
-            else: 
-                pass
+        #f(self.keepTrading):
+        action = buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, self.time)
+        print('action', action)
+
+        if(action == 0):
+            self.buy()
+        elif(action==1):
+            self.sell()
         else:
-            self.stopTrading()
+            pass
+        #else:
+         #   self.stopTrading()
