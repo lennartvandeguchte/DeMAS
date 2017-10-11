@@ -4,22 +4,30 @@ import numpy
 
 # run.py
 #all_wealth = []
-#all_history = []
+amountSteps = 415
+amountRuns = 1
 all_history = numpy.zeros(415)
+all_history_save = {}
 
 #amount of simulations
-for j in range(1):
+for j in range(amountRuns):
     # create new model for a simulation
     model = Market()
 
     #max range (timesteps) equals 415 (830 days)
-    for i in range(415):
+    for i in range(amountSteps):
         model.step()
         all_history[i] += model.globalPriceHistory[i]
     #show results for simulation j after 415 timesteps
+    all_history_save['results%s' % j]= model.globalPriceHistory
 
-for h in range(415):
-    all_history[h] = all_history[h]/100
+
+#learning agent learns
+
+
+
+for h in range(amountSteps):
+    all_history[h] = all_history[h]/amountRuns
 plt.plot(all_history)
 plt.show()
 
