@@ -12,7 +12,6 @@ class Market(Model):
     def __init__(self):
         self.globalPrice = 5.5
         self.globalPriceHistory = [self.globalPrice] #self.loadBitcoinData(200)
-        print(self.globalPriceHistory)
         self.num_agents = 0
         self.num_agents_historical = numpy.genfromtxt('./inputs/n-unique-addresses.csv', delimiter=',')
         self.num_bitcoins = 789
