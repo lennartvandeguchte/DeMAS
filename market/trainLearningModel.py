@@ -63,11 +63,11 @@ for index in range(len(simulated_data)-1):
     bitcoinData = simulated_data['results%s' %index]
 
     # Settings
-    epochs = 3
-    gamma = 0.35 # A high gamma will let the Q-learning search for rewards more time steps away
+    epochs = 4
+    gamma = 0.5 # A high gamma will let the Q-learning search for rewards more time steps away
     epsilon = 1
-    batchSize = 100
-    buffer = 200
+    batchSize = 50
+    buffer = 100
     replay = []
     learning_progress = [] # Stores tuples of (S, A, R, S')
     h = 0

@@ -41,16 +41,16 @@ def init_state(bitcoinData, test=False):
     diff = np.diff(bitcoinData) #Difference of bitcoinprices between days
     diff = np.insert(diff, 0, 0)
     cumsum_vec = np.cumsum(np.insert(bitcoinData, 0, 0)) 
-    sma15 = (cumsum_vec[15:] - cumsum_vec[:-15]) / 15 #computes simple moving average over timeperiods of 15/60 days  
+    sma15 = (cumsum_vec[15:] - cumsum_vec[:-15]) / 15 #computes simple moving average over timeperiods of 15/30 days  
     
     if(test==False or (len(bitcoinData)>14)):
         for i in range(14):
             sma15 = np.insert(sma15, 0, np.nan)
 
-    sma60 = (cumsum_vec[60:] - cumsum_vec[:-60]) / 60
-    if(test==False or (len(bitcoinData)>59)):
-        for i in range(59):
-            sma60 = np.insert(sma60, 0, np.nan)
+    sma30 = (cumsum_vec[30:] - cumsum_vec[:-30]) / 30
+    if(test==False or (len(bitcoinData)>29)):
+        for i in range(29):
+            sma30 = np.insert(sma30, 0, np.nan)
         
     rsi = rsiFunc(bitcoinData, diff)   #Computes the relative strength index (rsi)
 
@@ -60,11 +60,12 @@ def init_state(bitcoinData, test=False):
             for i in range(len(bitcoinData)):
                 sma15 = np.insert(sma15, 0, np.nan)
         
-        if(len(bitcoinData) < 60):
+        if(len(bitcoinData) < 30):
             for i in range(len(bitcoinData)):
-                sma60 = np.insert(sma60, 0, np.nan)   
+                sma30 = np.insert(sma30, 0, np.nan)   
 
-    xdata = np.column_stack((bitcoinData, diff, sma15, bitcoinData-sma15, sma15-sma60, rsi))
+    
+    xdata = np.column_stack((bitcoinData, diff, sma15, bitcoinData-sma15, sma15-sma30, rsi))
     xdata = np.nan_to_num(xdata)
 
     if test == False:
@@ -76,6 +77,7 @@ def init_state(bitcoinData, test=False):
         xdata = np.expand_dims(scaler.fit_transform(xdata), axis=1)
     
     state = xdata[0:1, 0:1, :]
+
     return state, xdata, bitcoinData
 
 # Function to compute the relative strength index

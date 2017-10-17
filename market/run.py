@@ -7,17 +7,17 @@ import pickle
 # run.py
 #all_wealth = []
 amountSteps = 415
-amountRuns = 2
+amountRuns = 1
 all_history = numpy.zeros(415)
 all_history_save = {}
-save_simulations = True
+save_simulations = False
 train_learning_agent = False
-learning_agent = True
+include_learning_agent = True
 
 #amount of simulations
 for j in range(amountRuns):
     # create new model for a simulation
-    model = Market(learning_agent)
+    model = Market(include_learning_agent)
 
     #max range (timesteps) equals 415 (830 days), this simulates the period between 01-01-2012 and 10-04-2014
     for i in range(amountSteps):

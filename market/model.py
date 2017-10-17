@@ -109,7 +109,7 @@ class Market(Model):
             for i in range(historicalBitcoinDifference):
                 size = len(self.schedule.agents) - 1
                 randomPick = numpy.random.randint(0, size)
-                while(type(self.schedule.agents[randomPick]) == RandomTrader):
+                while(type(self.schedule.agents[randomPick]) != RandomTrader):
                     randomPick = numpy.random.randint(0, size)
                 self.schedule.agents[randomPick].bitcoin += 1
         else:

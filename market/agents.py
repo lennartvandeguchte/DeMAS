@@ -29,7 +29,7 @@ class Trader(Agent):
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 0)
         self.model.buyOrderBook.append(o) 
 
-        self.wealth - buyLimit
+        self.wealth = self.wealth - buyLimit
         self.investment = buyLimit
 
     #wants to sell
@@ -43,8 +43,8 @@ class Trader(Agent):
 
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 1)
         self.model.sellOrderBook.append(o)
-
-        self.bitcoin - amountBtc
+    
+        self.bitcoin = self.bitcoin - amountBtc
         self.sellContract = amountBtc
 
     #wants to retire
@@ -119,9 +119,10 @@ class SelfLearningTrader(Trader):
         print('action', action)
         self.actionHistory = numpy.append(self.actionHistory, action)
         print('wealth LA', self.wealth)
-        if(action == 0):
+        print('bitcoin LA', self.bitcoin)
+        if(action == 1):
             self.buy()
-        elif(action==1):
+        elif(action==2):
             self.sell()
         else:
             pass
