@@ -1,6 +1,6 @@
 from mesa.model import Model
 from mesa.time import RandomActivation
-from agents import Trader, RandomTrader, ChartistTrader#, SelfLearningTrader
+from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader
 from keras.models import model_from_json
 import pandas as pd
 import numpy
@@ -9,7 +9,7 @@ import random
 import sys
 
 class Market(Model):
-    def __init__(self):
+    def __init__(self, learning_agent):
         self.globalPrice = 5.5
         self.globalPriceHistory = [self.globalPrice] #self.loadBitcoinData(200)
         self.num_agents = 0
@@ -23,24 +23,27 @@ class Market(Model):
         self.num_agents = math.floor(self.num_agents_historical[0]/100)
         print(self.num_agents)
 
-        # load and create learning model
-        json_file = open('inputs\learningModel.json', 'r')
-        loadedModel = json_file.read()
-        json_file.close()
-        self.learningModel = model_from_json(loadedModel)
-        # load weights into new model
-        self.learningModel.load_weights("inputs\model.h5")
-        print("Loaded model from disk")
+
+        if(learning_agent == True):
+            print('jooooooo')
+            # load and create learning model
+            json_file = open('inputs\learningModel.json', 'r')
+            loadedModel = json_file.read()
+            json_file.close()
+            self.learningModel = model_from_json(loadedModel)
+            # load weights into new model
+            self.learningModel.load_weights("inputs\model.h5")
+            print("Loaded model from disk")
 
         # Create agents
         for i in range(self.num_agents):
             wealth = numpy.random.pareto(0.6) * 100
             wealth = math.floor(wealth)
             bitcoin = 1
-            #print(wealth)
-            #if(i==1 and ): ### One self learning agent
-            #    a = SelfLearningTrader(i, self, wealth, bitcoin, self.schedule.time)
-            if(numpy.random.rand()<0.3):
+            
+            if(i==0 and learning_agent): ### One self learning agent
+                a = SelfLearningTrader(i, self, wealth, bitcoin)
+            elif(numpy.random.rand()<0.3):
                 a = ChartistTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)

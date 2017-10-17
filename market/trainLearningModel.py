@@ -63,8 +63,8 @@ for index in range(len(simulated_data)-1):
     bitcoinData = simulated_data['results%s' %index]
 
     # Settings
-    epochs = 1
-    gamma = 0.95 # A high gamma will let the Q-learning search for rewards more time steps away
+    epochs = 3
+    gamma = 0.35 # A high gamma will let the Q-learning search for rewards more time steps away
     epsilon = 1
     batchSize = 100
     buffer = 200
@@ -169,12 +169,13 @@ print('signal values', signal.values)
 print(np.asarray((unique, counts)).T)
 
 plt.figure()
-plt.subplot(3,1,1)
+plt.subplot(2,1,1)
 bt.plotTrades()
-plt.subplot(3,1,2)
+plt.subplot(2,1,2)
 bt.pnl.plot(style='x-')
-plt.subplot(3,1,3)
-plt.plot(learning_progress)
+
 
 plt.savefig('plt/summary'+'.png', bbox_inches='tight', pad_inches=1, dpi=72)
 plt.show()
+
+

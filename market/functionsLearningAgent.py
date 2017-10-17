@@ -31,7 +31,7 @@ def load_data(test=False):
 
 # Load simulated bitcoin data
 def load_simulated_data():
-    return pd.read_pickle('data/simulationPrices.pkl')
+    return pd.read_pickle('data/simulationPricesTEST5.pkl')
    
 
 #Initialize first state, all items are placed deterministically
@@ -42,16 +42,28 @@ def init_state(bitcoinData, test=False):
     diff = np.insert(diff, 0, 0)
     cumsum_vec = np.cumsum(np.insert(bitcoinData, 0, 0)) 
     sma15 = (cumsum_vec[15:] - cumsum_vec[:-15]) / 15 #computes simple moving average over timeperiods of 15/60 days  
-    for i in range(14):
-        sma15 = np.insert(sma15, 0, np.nan)
+    
+    if(test==False or (len(bitcoinData)>14)):
+        for i in range(14):
+            sma15 = np.insert(sma15, 0, np.nan)
 
     sma60 = (cumsum_vec[60:] - cumsum_vec[:-60]) / 60
-    for i in range(59):
-        sma60 = np.insert(sma60, 0, np.nan)
-    
+    if(test==False or (len(bitcoinData)>59)):
+        for i in range(59):
+            sma60 = np.insert(sma60, 0, np.nan)
+        
     rsi = rsiFunc(bitcoinData, diff)   #Computes the relative strength index (rsi)
 
     #--- Preprocess data
+    if(test==True):
+        if(len(bitcoinData) < 15):
+            for i in range(len(bitcoinData)):
+                sma15 = np.insert(sma15, 0, np.nan)
+        
+        if(len(bitcoinData) < 60):
+            for i in range(len(bitcoinData)):
+                sma60 = np.insert(sma60, 0, np.nan)   
+
     xdata = np.column_stack((bitcoinData, diff, sma15, bitcoinData-sma15, sma15-sma60, rsi))
     xdata = np.nan_to_num(xdata)
 
@@ -174,4 +186,9 @@ def evaluate_Q(eval_data, eval_model, price_data, epoch=0):
 
     return eval_reward
 
-
+def buySellOrPass(eval_data, eval_model): 
+    state, xdata, price_data = init_state(eval_data, test=True)
+    print('state', state)
+    qval = eval_model.predict(state, batch_size=1)
+    action = (np.argmax(qval))
+    return action

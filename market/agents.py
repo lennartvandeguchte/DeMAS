@@ -2,10 +2,7 @@ from mesa import Agent
 import numpy 
 from order import Order
 import random
-from learningAgent import buyBitcoin
-
-#from learningAgent import *
-
+from functionsLearningAgent import buySellOrPass
 
 #agents parent class
 class Trader(Agent):
@@ -110,24 +107,23 @@ class ChartistTrader(Trader):
 
 
 
-#trader that buys when globalprice is increasing and sells if globalprice is decreasing
-# class SelfLearningTrader(Trader):
-#     def __init__(self, unique_id, model, wealth, bitcoin, time):
-#         Trader.__init__(self, unique_id, model, wealth, bitcoin)
-#         self.expirationTime = 1
-#         self.time = time
+class SelfLearningTrader(Trader):
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 3
+        self.actionHistory = []
 
-#     #do behaviour for step at time t
-#     def step(self):
-#         #f(self.keepTrading):
-#         action = buyBitcoin(self.model.learningModel, self.model.globalPriceHistory, self.time)
-#         print('action', action)
-
-#         if(action == 0):
-#             self.buy()
-#         elif(action==1):
-#             self.sell()
-#         else:
-#             pass
-#         #else:
-#          #   self.stopTrading()
+    #do behaviour for step at time t
+    def step(self):
+        action = buySellOrPass(self.model.globalPriceHistory, self.model.learningModel)
+        print('action', action)
+        self.actionHistory = numpy.append(self.actionHistory, action)
+        print('wealth LA', self.wealth)
+        if(action == 0):
+            self.buy()
+        elif(action==1):
+            self.sell()
+        else:
+            pass
+        #else:
+         #   self.stopTrading()

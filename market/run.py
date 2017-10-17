@@ -7,14 +7,17 @@ import pickle
 # run.py
 #all_wealth = []
 amountSteps = 415
-amountRuns = 3
+amountRuns = 2
 all_history = numpy.zeros(415)
 all_history_save = {}
+save_simulations = True
+train_learning_agent = False
+learning_agent = True
 
 #amount of simulations
 for j in range(amountRuns):
     # create new model for a simulation
-    model = Market()
+    model = Market(learning_agent)
 
     #max range (timesteps) equals 415 (830 days), this simulates the period between 01-01-2012 and 10-04-2014
     for i in range(amountSteps):
@@ -25,14 +28,14 @@ for j in range(amountRuns):
 
 
 # Save simulated data to train and test the learning agent
-with open('data/simulationPrices.pkl', 'wb') as f:
-    pickle.dump(all_history_save, f, pickle.HIGHEST_PROTOCOL)
-
-
+if(save_simulations):   
+    with open('data/simulationPricesTEST5.pkl', 'wb') as f:
+        pickle.dump(all_history_save, f, pickle.HIGHEST_PROTOCOL)
 
 # Learning agent trains and tests
-# Can be commented and runned seperately to use the same simulated data, useful for parameter optimalization
-exec(open("trainLearningModel.py").read()) 
+# This file can also be runned seperately to tune parameters
+if(train_learning_agent):   
+    exec(open("trainLearningModel.py").read()) 
 
 
 # Show the average simulated bitcoin price over an amount of runs
