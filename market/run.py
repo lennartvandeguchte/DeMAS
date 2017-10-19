@@ -6,13 +6,13 @@ import pickle
 
 # run.py
 #all_wealth = []
-amountSteps = 415
+amountSteps = 1400
 amountRuns = 1
-all_history = numpy.zeros(415)
+all_history = numpy.zeros(amountSteps)
 all_history_save = {}
 save_simulations = False
 train_learning_agent = False
-include_learning_agent = True
+include_learning_agent = False
 
 #amount of simulations
 for j in range(amountRuns):
