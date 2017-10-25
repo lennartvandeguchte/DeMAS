@@ -4,7 +4,7 @@ from order import Order
 import random
 from functionsLearningAgent import buySellOrPass
 
-#agents parent class
+# Agents parent class
 class Trader(Agent):
     """ An agent with fixed initial wealth."""
     def __init__(self, unique_id, model, wealth, bitcoin):
@@ -15,8 +15,8 @@ class Trader(Agent):
         self.sellContract = 0
         self.keepTrading = True
 
-    #behaviours of the agents
-    #wants to buy
+    # Behaviours of the agents
+    # Wants to buy
     def buy(self):
         globalPrice = self.model.getGlobalPrice()
         buyLimit = numpy.random.rand(1)[0] * self.wealth
@@ -28,11 +28,9 @@ class Trader(Agent):
 
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 0)
         self.model.buyOrderBook.append(o) 
-
-        self.wealth = self.wealth - buyLimit
         self.investment = buyLimit
 
-    #wants to sell
+    # Wants to sell
     def sell(self):
         globalPrice = self.model.getGlobalPrice()
         amountBtc = numpy.random.rand(1)[0] * self.bitcoin
@@ -42,12 +40,10 @@ class Trader(Agent):
         priceLimit = globalPrice * g
 
         o = Order(self, amountBtc, priceLimit, self.expirationTime, 1)
-        self.model.sellOrderBook.append(o)
-    
-        self.bitcoin = self.bitcoin - amountBtc
+        self.model.sellOrderBook.append(o) 
         self.sellContract = amountBtc
 
-    #wants to retire
+    # Wants to retire
     def stopTrading(self):
         globalPrice = self.model.getGlobalPrice()
 
@@ -65,13 +61,13 @@ class Trader(Agent):
 
 
 
-#trader that makes random trades
+# Trader that makes random trades
 class RandomTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 3
     
-    #do behaviour for step at time t
+    # Do behaviour for step at time t
     def step(self):
         if(self.keepTrading):
             if(numpy.random.rand()<=0.1):    
@@ -85,12 +81,14 @@ class RandomTrader(Trader):
             self.stopTrading()
 
 
-#trader that buys when globalprice is increasing and sells if globalprice is decreasing
+# Trader that buys when globalprice is increasing and sells if globalprice is decreasing
 class ChartistTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 1
-        self.lookBackTime = numpy.random.randint(30)+1
+        #self.lookBackTime = numpy.random.randint(30)+1
+        self.lookBackTime = 10
+
 
      #do behaviour for step at time t
     def step(self):
@@ -106,14 +104,14 @@ class ChartistTrader(Trader):
             self.stopTrading()
 
 
-
+# Trader that performs a behaviour according to what it has learning in the past
 class SelfLearningTrader(Trader):
     def __init__(self, unique_id, model, wealth, bitcoin):
         Trader.__init__(self, unique_id, model, wealth, bitcoin)
         self.expirationTime = 3
         self.actionHistory = []
 
-    #do behaviour for step at time t
+    # Do behaviour for step at time t
     def step(self):
         action = buySellOrPass(self.model.globalPriceHistory, self.model.learningModel)
         print('action', action)
@@ -126,5 +124,23 @@ class SelfLearningTrader(Trader):
             self.sell()
         else:
             pass
-        #else:
-         #   self.stopTrading()
+
+
+# Trader that buys when a local minimum is reached and sell when a local maximum is reached
+class FastTrader(Trader):
+    def __init__(self, unique_id, model, wealth, bitcoin):
+        Trader.__init__(self, unique_id, model, wealth, bitcoin)
+        self.expirationTime = 1
+
+    # Do behaviour for step at time t
+    def step(self):
+        if((self.model.schedule.time > 1) and (self.model.globalPriceHistory[-2] < self.model.getGlobalPrice()) and (self.model.globalPriceHistory[-3] > self.model.globalPriceHistory[-2])):
+            self.buy()
+            print('fast trader buys')
+        elif((self.model.schedule.time > 1) and (self.model.globalPriceHistory[-2] > self.model.getGlobalPrice()) and (self.model.globalPriceHistory[-3] < self.model.globalPriceHistory[-2])):  
+            self.sell()
+            print('fast trader sells')
+        else: 
+            pass
+
+

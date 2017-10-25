@@ -11,12 +11,11 @@ from sklearn.externals import joblib
 import sys
 import quandl
 
-#Load real bitcoin data
+# Load real bitcoin data
 def read_convert_data(symbol='BITSTAMP'):
     if symbol == 'BITSTAMP':
         prices = quandl.get("BCHARTS/BITSTAMPUSD")
         prices.to_pickle('data/BITSTAMP_1day.pkl') # a /data folder must exist
-    #print(prices)
 
 def load_data(test=False):
     prices = pd.read_pickle('data/BITSTAMP_1day.pkl')
@@ -34,7 +33,7 @@ def load_simulated_data():
     return pd.read_pickle('data/simulationPricesTEST5.pkl')
    
 
-#Initialize first state, all items are placed deterministically
+#Initialize first state
 def init_state(bitcoinData, test=False):
     
     # Compute features of bitcoin price to feed the network
@@ -91,7 +90,6 @@ def rsiFunc(prices, diff, n=14):
 
     for i in range(n, len(prices)):
         delta = diff[i-1] # cause the diff is 1 shorter
-
         if delta>0:
             upval = delta
             downval = 0.
@@ -107,15 +105,13 @@ def rsiFunc(prices, diff, n=14):
 
     return rsi
 
-#Take Action
+# Take Action
+# This generates a list of trade signals that at evaluation time are fed to the backtester
 def take_action(state, xdata, action, signal, time_step):
-    #this should generate a list of trade signals that at evaluation time are fed to the backtester
-    #the backtester should get a list of trade signals and a list of price data for the assett
-    
-    #make necessary adjustments to state and then return it
+    # Make necessary adjustments to state and then return it
     time_step += 1
     
-    #if the current iteration is the last state ("terminal state") then set terminal_state to 1
+    # If the current iteration is the last state ("terminal state") then set terminal_state to 1
     if time_step + 1 == xdata.shape[0]:
         state = xdata[time_step-1:time_step, 0:1, :]
         terminal_state = 1
@@ -123,23 +119,22 @@ def take_action(state, xdata, action, signal, time_step):
 
         return state, time_step, signal, terminal_state
 
-    #move the market data window one step forward
+    # Move the market data window one step forward
     state = xdata[time_step-1:time_step, 0:1, :]
-    #take action
+    # Take action
     if action == 1:
         signal.loc[time_step] = 100
     elif action == 2:
         signal.loc[time_step] = -100
     else:
         signal.loc[time_step] = 0
-    #print(state)
+
     terminal_state = 0
-    #print('signal', signal)
 
     return state, time_step, signal, terminal_state
 
 
-#Get Reward, the reward is returned at the end of an episode
+# Get Reward, the reward is returned at the end of an episode
 def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval=False, epoch=0):
     reward = 0
     signal.fillna(value=0, inplace=True)
@@ -149,7 +144,7 @@ def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval
         reward = ((bt.data['price'].iloc[-1] - bt.data['price'].iloc[-2])*bt.data['shares'].iloc[-1])
 
     if terminal_state == 1 and eval == True:
-        #save a figure of the test set
+        # Save a figure of the test set
         bt = twp.Backtest(pd.Series(data=[x for x in xdata], index=signal.index.values), signal, signalType='shares')
         reward = bt.pnl.iloc[-1]
         plt.figure(figsize=(3,4))
@@ -160,12 +155,11 @@ def get_reward(new_state, time_step, action, xdata, signal, terminal_state, eval
         plt.suptitle(str(epoch))
         plt.savefig('plt/'+str(epoch)+'.png', bbox_inches='tight', pad_inches=1, dpi=72)
         plt.close('all')
-    #print(time_step, terminal_state, eval, reward)
 
     return reward
 
 def evaluate_Q(eval_data, eval_model, price_data, epoch=0):
-    #This function is used to evaluate the performance of the system each epoch, without the influence of epsilon and random actions
+    # This function is used to evaluate the performance of the system each epoch, without the influence of epsilon and random actions
   
     signal = pd.Series(index=np.arange(len(eval_data)))
     state, xdata, price_data = init_state(eval_data)
@@ -173,21 +167,21 @@ def evaluate_Q(eval_data, eval_model, price_data, epoch=0):
     terminal_state = 0
     time_step = 1
     while(status == 1):
-        #We start in state S
-        #Run the Q function on S to get predicted reward values on all the possible actions
+        # We start in state S
+        # Run the Q function on S to get predicted reward values on all the possible actions
         qval = eval_model.predict(state, batch_size=1)
-        #print('qval', qval)
         action = (np.argmax(qval))
-        #Take action, observe new state S'
+        # Take action, observe new state S'
         new_state, time_step, signal, terminal_state = take_action(state, xdata, action, signal, time_step)
-        #Observe reward
+        # Observe reward
         eval_reward = get_reward(new_state, time_step, action, price_data, signal, terminal_state, eval=True, epoch=epoch)
         state = new_state
-        if terminal_state == 1: #terminal state
+        if terminal_state == 1: 
             status = 0
 
     return eval_reward
 
+# This function is used during simulation and determines which action to take in a specific state
 def buySellOrPass(eval_data, eval_model): 
     state, xdata, price_data = init_state(eval_data, test=True)
     print('state', state)

@@ -1,6 +1,6 @@
 from mesa.model import Model
 from mesa.time import RandomActivation
-from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader
+from agents import Trader, RandomTrader, ChartistTrader, SelfLearningTrader, FastTrader
 from keras.models import model_from_json
 import pandas as pd
 import numpy
@@ -9,9 +9,9 @@ import random
 import sys
 
 class Market(Model):
-    def __init__(self, learning_agent):
+    def __init__(self, include_learning_agent, include_fast_trader):
         self.globalPrice = 5.5
-        self.globalPriceHistory = [self.globalPrice] #self.loadBitcoinData(200)
+        self.globalPriceHistory = [self.globalPrice] 
         self.num_agents = 0
         self.num_agents_historical = numpy.genfromtxt('./inputs/n-unique-addresses.csv', delimiter=',')
         self.num_bitcoins = 789
@@ -19,21 +19,18 @@ class Market(Model):
         self.schedule = RandomActivation(self)
         self.sellOrderBook = []
         self.buyOrderBook = []
-
+        self.virtualWealth = numpy.zeros((4, 415))
         self.num_agents = math.floor(self.num_agents_historical[0]/100)
-        print(self.num_agents)
 
-
-        if(learning_agent == True):
-            print('jooooooo')
-            # load and create learning model
+        if(include_learning_agent == True):
+            # Load and create learning model
             json_file = open('inputs\learningModel.json', 'r')
             loadedModel = json_file.read()
             json_file.close()
             self.learningModel = model_from_json(loadedModel)
-            # load weights into new model
+            # Load weights into new model
             self.learningModel.load_weights("inputs\model.h5")
-            print("Loaded model from disk")
+            print("Loaded the learning model from disk")
 
         # Create agents
         for i in range(self.num_agents):
@@ -41,9 +38,11 @@ class Market(Model):
             wealth = math.floor(wealth)
             bitcoin = 1
             
-            if(i==0 and learning_agent): ### One self learning agent
+            if(i==0 and include_learning_agent): # Self learning agent
                 a = SelfLearningTrader(i, self, wealth, bitcoin)
-            elif(numpy.random.rand()<0.3):
+            elif(i==1 and include_fast_trader): # Fast trading agent
+                a = FastTrader(i, self, wealth, bitcoin)
+            elif(numpy.random.rand()<0.3):  
                 a = ChartistTrader(i, self, wealth, bitcoin)
             else:
                 a = RandomTrader(i, self, wealth, bitcoin)
@@ -55,7 +54,7 @@ class Market(Model):
         return prices['Close'].values
 
 
-    #setters and getters
+    # Setters and getters
     def getGlobalPrice(self):
         return self.globalPrice
 
@@ -69,15 +68,15 @@ class Market(Model):
         t = self.schedule.time
         self.num_bitcoins_historical =math.floor(((4.709*10**-5)*(t**3)-(0.08932*(t**2))+98.88*t+78880)/100)  
 
-    #functions
+    # Functions
     def marketMigration(self):
-        # checking for difference between data and model
+        # Checking for difference between data and model
         if(self.schedule.time < 415):
             historicalDifference = math.floor(self.num_agents_historical[math.floor(self.schedule.time/2)]/100) - self.num_agents
         else:
             historicalDifference = 0
 
-        # there are not enough traders in the model   
+        # There are not enough traders in the model   
         if(historicalDifference > 0):
             for i in range(historicalDifference):
                 wealth = numpy.random.pareto(0.6) * 100
@@ -90,7 +89,7 @@ class Market(Model):
                     a = RandomTrader(i, self, wealth, bitcoin)
                 self.num_agents += 1
                 self.schedule.add(a)
-        elif(historicalDifference < 0):
+        elif(historicalDifference < 0): # Remove a random chosen agent from the market when there are too many agents
             for i in range(historicalDifference*-1):
                 self.num_agents -= 1
                 size = len(self.schedule.agents) - 1
@@ -101,7 +100,7 @@ class Market(Model):
         else:
             pass
 
-    
+    # Random traders can get bitcoins by mining them
     def mining(self):
         self.setHistoricalBitcoins()
         historicalBitcoinDifference = self.num_bitcoins_historical - self.num_bitcoins
@@ -116,7 +115,7 @@ class Market(Model):
             pass
 
 
-
+    # Check if the experiation time of an buy or sell order is not yet overdue
     def checkExpiration(self):
         for order in self.sellOrderBook:
             if (order.expirationTime <= 0):
@@ -131,28 +130,19 @@ class Market(Model):
                 order.expirationTime -= 1
 
 
-
+    # Order the sell and buy orderbooks such that the best sell and buy orders are on top of it
     def orderLists(self):
         self.sellOrderBook.sort(key=lambda order: order.priceLimit)
-#        for order in self.sellOrderBook:
-#            print("sell")
-#            print(order.priceLimit)
-
         self.buyOrderBook.sort(key=lambda order: order.priceLimit, reverse=True)
-#        for order in self.buyOrderBook:
-#            print("buy")
-#            print(order.priceLimit)
 
-
+    # Do the actual trading, here the sorted orderbooks are handled from top to bottom
     def resolveOrders(self):
         price = self.globalPrice
 
-        while(self.buyOrderBook and self.sellOrderBook and self.sellOrderBook[0].priceLimit <= self.buyOrderBook[0].priceLimit):
-            
+        while(self.buyOrderBook and self.sellOrderBook and self.sellOrderBook[0].priceLimit <= self.buyOrderBook[0].priceLimit):        
             #variables
             price = (self.sellOrderBook[0].priceLimit + self.buyOrderBook[0].priceLimit) / 2
             amount = min(self.sellOrderBook[0].amountBtc,self.buyOrderBook[0].amountBtc)
-
 
             #trade
             self.sellOrderBook[0].trader.wealth += amount * price
@@ -170,11 +160,35 @@ class Market(Model):
 
         self.setGlobalPrice(price)
         self.globalPriceHistory = numpy.append(self.globalPriceHistory, price)
-        print(self.globalPrice)
-        #print(self.sellOrderBook[0])
   
-                        
-
+    # Compute the average virtual wealth (wealth + bitcoins*globalPrice) of each type of agent
+    def computeVirtualWealth(self):
+        virtualWealthFastTraders = 0
+        virtualWealthRandomTraders = 0
+        virtualWealthChartistTraders = 0
+        virtualWealthSelfLearningTraders = 0
+        numFastTraders = 0
+        numRandomTraders = 0
+        numChartistTraders = 0
+        numSelfLearningTraders = 0
+        for agent in self.schedule.agents:
+            if isinstance(agent, FastTrader):
+                virtualWealthFastTraders = virtualWealthFastTraders + agent.wealth + (agent.bitcoin*self.globalPrice)
+                numFastTraders += 1
+            elif isinstance(agent, RandomTrader):
+                virtualWealthRandomTraders = virtualWealthRandomTraders + agent.wealth + (agent.bitcoin*self.globalPrice)
+                numRandomTraders += 1
+            elif isinstance(agent, ChartistTrader):
+                virtualWealthChartistTraders = virtualWealthChartistTraders + agent.wealth + (agent.bitcoin*self.globalPrice)
+                numChartistTraders += 1
+            elif isinstance(agent, SelfLearningTrader):
+                virtualWealthSelfLearningTraders = virtualWealthSelfLearningTraders + agent.wealth + (agent.bitcoin*self.globalPrice)
+                numSelfLearningTraders += 1
+        print(self.schedule.time)
+        self.virtualWealth[0][self.schedule.time-1] = virtualWealthFastTraders/numFastTraders
+        self.virtualWealth[1][self.schedule.time-1] = virtualWealthRandomTraders/numRandomTraders
+        self.virtualWealth[2][self.schedule.time-1] = virtualWealthChartistTraders/numChartistTraders
+        self.virtualWealth[3][self.schedule.time-1] = virtualWealthSelfLearningTraders/numSelfLearningTraders
 
     #timestep function calls
     def step(self):
@@ -196,4 +210,9 @@ class Market(Model):
         
         #match buy and sell orders and execute them
         self.resolveOrders()
+        
+        #compute virtual wealth of all agents
+        self.computeVirtualWealth()
+
+    
 

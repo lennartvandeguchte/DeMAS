@@ -1,7 +1,5 @@
 
-
-
-
+# Creates an order
 class Order:
 	def __init__(self, trader, amountBtc,priceLimit, expirationTime, buyOrSell):
 		self.trader = trader
