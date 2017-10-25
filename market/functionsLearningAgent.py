@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from sklearn import metrics, preprocessing
 from sklearn.externals import joblib
 import sys
-import quandl
+#import quandl
 
 # Load real bitcoin data
 def read_convert_data(symbol='BITSTAMP'):
